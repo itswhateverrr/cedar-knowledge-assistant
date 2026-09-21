@@ -1,0 +1,59 @@
+name: CI
+
+# Runs on every push to main, on pull requests, and on demand from the Actions tab.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-and-eval:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get the code
+        uses: actions/checkout@v4
+
+      # 1. Cheap check first: does the image build? Fails fast, costs nothing.
+      - name: Build Docker image
+        run: docker build -t cedar-assistant .
+
+      # 2. Does the container actually start and report healthy?
+      #    Dummy keys are fine: /api/health never calls Claude or Brave.
+      - name: Smoke test (container starts and /api/health answers)
+        run: |
+          docker run -d --name cedar -p 8000:8000 \
+            -e ANTHROPIC_API_KEY=dummy -e BRAVE_API_KEY=dummy -e WEBHOOK_SECRET=ci \
+            cedar-assistant
+          for i in $(seq 1 40); do
+            if curl -sf http://localhost:8000/api/health; then echo; exit 0; fi
+            sleep 3
+          done
+          docker logs cedar
+          exit 1
+
+      # 3. The eval suite, run inside the same image that would be deployed.
+      #    It makes real Claude and Brave calls (a few cents), so it only runs on
+      #    pushes to main and manual runs. GitHub does not give secrets to
+      #    pull requests from forks, so PRs skip this step.
+      #    run_evals.py exits non-zero if any case fails, which fails the job.
+      - name: Run evals
+        if: github.event_name != 'pull_request'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          BRAVE_API_KEY: ${{ secrets.BRAVE_API_KEY }}
+        run: |
+          mkdir -p eval-results && chmod 777 eval-results
+          docker run --rm \
+            -e ANTHROPIC_API_KEY -e BRAVE_API_KEY -e WEBHOOK_SECRET=ci \
+            -v "$PWD/eval-results:/app/evals/results" \
+            cedar-assistant python evals/run_evals.py ci
+
+      # Keep the result file even when the evals fail, so you can see why.
+      - name: Save eval results
+        if: always() && github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-results
+          path: eval-results/
+          if-no-files-found: ignore

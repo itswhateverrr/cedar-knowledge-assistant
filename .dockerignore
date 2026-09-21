@@ -1,0 +1,13 @@
+# Never send secrets or local clutter into the image build.
+.env
+.git
+.gitignore
+.vscode
+.DS_Store
+__pycache__
+*.pyc
+venv
+evals/results
+CLAUDE.md
+Dockerfile
+.dockerignore
