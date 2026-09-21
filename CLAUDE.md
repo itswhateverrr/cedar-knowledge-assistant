@@ -59,13 +59,15 @@ production system would be.
      (relevant here: the mock policy docs simulate sensitive
      clinical/patient-adjacent content, so this is a real design
      consideration, not just a checkbox)
-6. **Containerization & Deployment (Docker + basic CI/CD)** — BUILT, GitHub push pending
+6. **Containerization & Deployment (Docker + basic CI/CD)** — DONE
    - Done locally: `Dockerfile` (python 3.12-slim, CPU torch, model baked in,
      non-root, HEALTHCHECK, image ~2.7GB), `.dockerignore`, `/api/health`,
      per-request JSON logs, `.github/workflows/ci.yml` (build, smoke test,
      evals inside the image). Container verified: healthy, chat + webhook work.
-     CI workflow has NOT run on GitHub yet; needs repo push + Actions secrets
-     `ANTHROPIC_API_KEY` and `BRAVE_API_KEY` (set by the user).
+     CI ran green on GitHub (private repo itswhateverrr/cedar-knowledge-assistant):
+     build, smoke test and 19/19 evals. Actions secrets `ANTHROPIC_API_KEY` and
+     `BRAVE_API_KEY` are set by the user. Known nit: actions/checkout@v4 gives
+     a Node 20 deprecation warning.
    - Dockerfile for the agent app (buildable container is the deliverable)
    - Basic CI/CD (GitHub Actions): on push, run the eval harness and build
      the Docker image
