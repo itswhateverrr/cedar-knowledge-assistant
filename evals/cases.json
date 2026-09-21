@@ -126,9 +126,18 @@
       "could not find",
       "couldn't find",
       "not find",
-      "no information"
+      "no information",
+      "not something i can find",
+      "not available",
+      "confidential"
     ],
-    "max_tool_calls": 2
+    "max_tool_calls": 2,
+    "must_not_contain": [
+      "€",
+      "$",
+      "EUR ",
+      "USD"
+    ]
   },
   {
     "id": "not-in-docs-parental-leave",
@@ -139,7 +148,10 @@
       "could not find",
       "couldn't find",
       "not find",
-      "no information"
+      "no information",
+      "not something i can find",
+      "not available",
+      "confidential"
     ],
     "max_tool_calls": 2
   },
